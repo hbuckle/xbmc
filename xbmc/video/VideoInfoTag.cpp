@@ -25,6 +25,85 @@
 #include <string>
 #include <vector>
 
+std::string const& CVideoPerson::GetName() const
+{
+  return m_strName;
+}
+void CVideoPerson::SetName(std::string name)
+{
+  m_strName = StringUtils::Trim(name);
+}
+std::string const& CVideoPerson::GetRole() const
+{
+  return m_strRole;
+}
+void CVideoPerson::SetRole(std::string role)
+{
+  m_strRole = StringUtils::Trim(role);
+}
+std::string const& CVideoPerson::GetType() const
+{
+  return m_strType;
+}
+void CVideoPerson::SetType(std::string type)
+{
+  m_strType = StringUtils::Trim(type);
+}
+const std::string CVideoPerson::GetUniqueID(std::string type) const
+{
+  if (type.empty())
+    return "";
+
+  const auto& uniqueid = m_uniqueIDs.find(type);
+  if (uniqueid == m_uniqueIDs.end())
+    return "";
+
+  return uniqueid->second;
+}
+void CVideoPerson::SetUniqueID(const std::string& uniqueid, const std::string& type)
+{
+  if (uniqueid.empty() || type.empty())
+    return;
+
+  m_uniqueIDs[type] = uniqueid;
+}
+const std::map<std::string, std::string>& CVideoPerson::GetUniqueIDs() const
+{
+  return m_uniqueIDs;
+}
+void CVideoPerson::SetUniqueIDs(std::map<std::string, std::string> uniqueIDs)
+{
+  m_uniqueIDs = std::move(uniqueIDs);
+}
+bool CVideoPerson::HasUniqueID() const
+{
+  return !m_uniqueIDs.empty();
+}
+bool CVideoPerson::Load(const TiXmlElement *element)
+{
+  if (!element)
+    return false;
+
+  std::string value;
+  if (XMLUtils::GetString(element, "name", value))
+    SetName(value);
+  if (XMLUtils::GetString(element, "role", value))
+    SetRole(value);
+  if (XMLUtils::GetString(element, "type", value))
+    SetType(value);
+  const TiXmlElement* uniqueid = element->FirstChildElement("uniqueid");
+  for (; uniqueid != nullptr; uniqueid = uniqueid->NextSiblingElement("uniqueid"))
+  {
+    if (uniqueid->FirstChild())
+    {
+      if (uniqueid->QueryStringAttribute("type", &value) == TIXML_SUCCESS)
+        SetUniqueID(uniqueid->FirstChild()->ValueStr(), value);
+    }
+  }
+
+  return true;
+}
+
 void CVideoInfoTag::Reset()
 {
   m_director.clear();
@@ -40,6 +119,7 @@ void CVideoInfoTag::Reset()
   m_strOriginalTitle.clear();
   m_strSortTitle.clear();
   m_cast.clear();
+  m_people.clear();
   m_set.title.clear();
   m_set.id = -1;
   m_set.overview.clear();
@@ -361,6 +441,8 @@ void CVideoInfoTag::Merge(CVideoInfoTag& other)
     m_strSortTitle = other.m_strSortTitle;
   if (other.m_cast.size())
     m_cast = other.m_cast;
+  if (other.m_people.size())
+    m_people = other.m_people;
 
   if (!other.m_set.title.empty())
     m_set.title = other.m_set.title;
@@ -1259,6 +1341,31 @@ void CVideoInfoTag::ParseNative(const TiXmlElement* movie, bool prioritise)
       m_cast.push_back(info);
     }
     node = node->NextSiblingElement("actor");
+  }
+
+  node = movie->FirstChildElement("people");
+  if (node && node->FirstChild() && prioritise)
+    m_people.clear();
+  while (node)
+  {
+    const TiXmlNode *person = node->FirstChild("name");
+    if (person && person->FirstChild())
+    {
+      CVideoPerson info;
+      info.SetName(person->FirstChild()->Value());
+
+      if (XMLUtils::GetString(node, "role", value))
+        info.SetRole(StringUtils::Trim(value));
+
+      if (XMLUtils::GetString(node, "type", value))
+        info.SetType(StringUtils::Trim(value));
+
+      const char* clear=node->Attribute("clear");
+      if (clear && StringUtils::CompareNoCase(clear, "true"))
+        m_people.clear();
+      m_people.push_back(info);
+    }
+    node = node->NextSiblingElement("people");
   }
 
   // Pre-Jarvis NFO file:

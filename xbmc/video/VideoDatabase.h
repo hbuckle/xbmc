@@ -979,7 +979,7 @@ public:
    * \param fallback optionally request fallback to the art of the parent/owner for each art type
      that is not defined for the asset
    * \param art collection of the retrieved art
-   * \return 
+   * \return
   */
   bool GetArtForAsset(int assetId,
                       ArtFallbackOptions fallback,
@@ -1141,6 +1141,7 @@ protected:
   int UpdateUniqueIDs(int mediaId, const char *mediaType, const CVideoInfoTag& details);
   int AddUniqueIDs(int mediaId, const char *mediaType, const CVideoInfoTag& details);
   int AddActor(const std::string& strActor, const std::string& thumbURL, const std::string &thumb = "");
+  int AddPerson(const CVideoPerson& person);
 
   int AddTvShow();
 
@@ -1162,6 +1163,7 @@ protected:
 
   // link functions - these two do all the work
   void AddLinkToActor(int mediaId, const char *mediaType, int actorId, const std::string &role, int order);
+  void AddLinkToPerson(int mediaId, const char *mediaType, int personId, const std::string &role, const std::string &type);
   void AddToLinkTable(int mediaId, const std::string& mediaType, const std::string& table, int valueId, const char *foreignKey = NULL);
   void RemoveFromLinkTable(int mediaId, const std::string& mediaType, const std::string& table, int valueId, const char *foreignKey = NULL);
 
@@ -1171,6 +1173,7 @@ protected:
   void UpdateActorLinksToItem(int mediaId, const std::string& mediaType, const std::string& field, const std::vector<std::string>& values);
 
   void AddCast(int mediaId, const char *mediaType, const std::vector<SActorInfo> &cast);
+  void AddPeople(int mediaId, const char *mediaType, const std::vector<CVideoPerson> &people);
 
   CVideoInfoTag GetDetailsForMovie(std::unique_ptr<dbiplus::Dataset> &pDS, int getDetails = VideoDbDetailsNone);
   CVideoInfoTag GetDetailsForMovie(const dbiplus::sql_record* const record, int getDetails = VideoDbDetailsNone);

@@ -211,6 +211,10 @@ void CVideoDatabase::CreateTables()
   CLog::Log(LOGINFO, "create videoversion table");
   m_pDS->exec("CREATE TABLE videoversion (idFile INTEGER PRIMARY KEY, idMedia INTEGER, media_type "
               "TEXT, itemType INTEGER, idType INTEGER)");
+
+  CLog::Log(LOGINFO, "create people table");
+  m_pDS->exec("CREATE TABLE people (person_id INTEGER PRIMARY KEY, name TEXT, art_urls TEXT)");
+  m_pDS->exec("CREATE TABLE people_link(person_id INTEGER, media_id INTEGER, media_type TEXT, role TEXT, type TEXT)");
 }
 
 void CVideoDatabase::CreateLinkIndex(const char *table)
@@ -1968,6 +1972,83 @@ void CVideoDatabase::AddCast(int mediaId, const char *mediaType, const std::vect
   }
 }
 
+void CVideoDatabase::AddPeople(int mediaId, const char *mediaType, const std::vector<CVideoPerson> &people)
+{
+  if (people.empty())
+    return;
+
+  for (const auto &i : people)
+  {
+    int idPerson = AddPerson(i);
+    AddLinkToPerson(mediaId, mediaType, idPerson, i.GetRole(), i.GetType());
+  }
+}
+
+int CVideoDatabase::AddPerson(const CVideoPerson& person)
+{
+  if (nullptr == m_pDB)
+    return -1;
+  if (nullptr == m_pDS)
+    return -1;
+  int idPerson = -1;
+
+  std::string strSQL = PrepareSQL("SELECT media_id FROM uniqueid WHERE");
+  std::string clause;
+  for (const auto& i : person.GetUniqueIDs())
+  {
+    clause = PrepareSQL("(media_type, type, value) = ('%s', '%s', '%s')", MediaTypePerson, i.first.c_str(), i.second.c_str());
+    strSQL = strSQL + " " + clause + " OR";
+  }
+  if (StringUtils::EndsWith(strSQL, " OR"))
+  {
+    strSQL = strSQL.erase(strSQL.length() - 3);
+  }
+  m_pDS->query(strSQL);
+  if (m_pDS->num_rows() == 0)
+  {
+    m_pDS->close();
+    strSQL=PrepareSQL("INSERT INTO people (person_id, name) values(NULL, '%s')", person.GetName());
+    m_pDS->exec(strSQL);
+    idPerson = (int)m_pDS->lastinsertid();
+  }
+
+  return idPerson;
+}
+
+// void CVideoDatabase::AddPersonUniqueIDs(int mediaId, const CVideoPerson& person)
+// {
+//   for (const auto& i : person.GetUniqueIDs())
+//   {
+//     std::string strSQL = PrepareSQL("SELECT uniqueid_id FROM uniqueid WHERE media_id=%i AND media_type='%s' AND type = '%s'", mediaId, MediaTypePerson, i.first.c_str());
+//     m_pDS->query(strSQL);
+//     if (m_pDS->num_rows() == 0)
+//     {
+//       m_pDS->close();
+//       strSQL = PrepareSQL("INSERT INTO uniqueid (media_id, media_type, value, type) VALUES (%i, '%s', '%s', '%s')", mediaId, MediaTypePerson, i.second.c_str(), i.first.c_str());
+//     }
+//     else
+//     {
+//       int id = m_pDS->fv(0).get_asInt();
+//       m_pDS->close();
+//       strSQL = PrepareSQL("UPDATE uniqueid SET value = '%s', type = '%s' WHERE uniqueid_id = %i", i.second.c_str(), i.first.c_str(), id);
+//     }
+//     m_pDS->exec(strSQL);
+//   }
+// }
+
+void CVideoDatabase::AddLinkToPerson(int mediaId, const char *mediaType, int personId, const std::string &role, const std::string &type)
+{
+  std::string sql = PrepareSQL("SELECT 1 FROM people_link WHERE person_id=%i AND "
+                               "media_id=%i AND media_type='%s' AND role='%s' AND type='%s'",
+                               personId, mediaId, mediaType, role.c_str(), type.c_str());
+
+  if (GetSingleValue(sql).empty())
+  { // doesn't exists, add it
+    sql = PrepareSQL("INSERT INTO people_link (person_id, media_id, media_type, role, type) VALUES(%i,%i,'%s','%s',%i)", personId, mediaId, mediaType, role.c_str(), type.c_str());
+    ExecuteQuery(sql);
+  }
+}
+
 //********************************************************************************************************************************
 bool CVideoDatabase::LoadVideoInfo(const std::string& strFilenameAndPath, CVideoInfoTag& details, int getDetails /* = VideoDbDetailsAll */)
 {
@@ -2638,6 +2719,7 @@ int CVideoDatabase::SetDetailsForMovie(CVideoInfoTag& details,
       UpdateFileDateAdded(details);
 
     AddCast(idMovie, "movie", details.m_cast);
+    AddPeople(idMovie, "movie", details.m_people);
     AddLinksToItem(idMovie, MediaTypeMovie, "genre", details.m_genre);
     AddLinksToItem(idMovie, MediaTypeMovie, "studio", details.m_studio);
     AddLinksToItem(idMovie, MediaTypeMovie, "country", details.m_country);
@@ -6433,7 +6515,7 @@ void CVideoDatabase::UpdateTables(int iVersion)
 
 int CVideoDatabase::GetSchemaVersion() const
 {
-  return 131;
+  return 132;
 }
 
 bool CVideoDatabase::LookupByFolders(const std::string &path, bool shows)

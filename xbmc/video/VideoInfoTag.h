@@ -39,6 +39,28 @@ struct SActorInfo
   int        order = -1;
 };
 
+class CVideoPerson
+{
+public:
+  std::string const& GetName() const;
+  void SetName(std::string name);
+  std::string const& GetRole() const;
+  void SetRole(std::string role);
+  std::string const& GetType() const;
+  void SetType(std::string type);
+  const std::string GetUniqueID(std::string type) const;
+  void SetUniqueID(const std::string& uniqueid, const std::string& type);
+  const std::map<std::string, std::string>& GetUniqueIDs() const;
+  void SetUniqueIDs(std::map<std::string, std::string> uniqueIDs);
+  bool HasUniqueID() const;
+  bool Load(const TiXmlElement *element);
+private:
+  std::string m_strName;
+  std::string m_strRole;
+  std::string m_strType;
+  std::map<std::string, std::string> m_uniqueIDs;
+};
+
 class CRating
 {
 public:
@@ -361,6 +383,7 @@ public:
   std::string m_strSortTitle;
   std::vector<std::string> m_artist;
   std::vector< SActorInfo > m_cast;
+  std::vector< CVideoPerson > m_people;
   typedef std::vector< SActorInfo >::const_iterator iCast;
   struct SetInfo //!< Struct holding information about a movie set
   {
