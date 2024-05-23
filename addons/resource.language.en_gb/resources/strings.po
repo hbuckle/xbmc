@@ -3916,7 +3916,13 @@ msgctxt "#852"
 msgid "Valid port range is 1024-65535"
 msgstr ""
 
-#empty strings from id 853 to 996
+#. Label for denoting any channel for a certain client in timer settings dialog
+#: xbmc/pvr/dialogs/GUIDislogPVRTimerSettings.cpp
+msgctxt "#853"
+msgid "Any channel from client \"{0:s}\""
+msgstr ""
+
+#empty strings from id 854 to 996
 
 #: xbmc/windows/GUIMediaWindow.cpp
 msgctxt "#997"
@@ -7289,6 +7295,9 @@ msgctxt "#13423"
 msgid "Remember for this path"
 msgstr ""
 
+#. Shown on context menu when a bluray:// or dvd:// playlist has already been saved
+#. Giving the user a chance to select a new one via the simple menu dialog
+#: xbmc/video/windows/GUIWindowVideoBase.cpp
 msgctxt "#13424"
 msgid "Choose playlist"
 msgstr ""
@@ -7603,7 +7612,7 @@ msgstr ""
 
 #: system/settings/settings.xml
 msgctxt "#13518"
-msgid "When the speed change exceeds this threshold, a pitch-correction filter will be applied. This avoids the \"chipmonk voices\" that normally result from speeding up a video"
+msgid "When the speed change exceeds this threshold, a pitch-correction filter will be applied. This avoids the \"chipmunk voices\" that normally result from speeding up a video"
 msgstr ""
 
 #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
