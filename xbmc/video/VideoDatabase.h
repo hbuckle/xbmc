@@ -1134,6 +1134,7 @@ protected:
   int AddUniqueIDs(int mediaId, const char *mediaType, const CVideoInfoTag& details);
   int AddActor(const std::string& strActor, const std::string& thumbURL, const std::string &thumb = "");
   int AddPerson(const CVideoPerson& person);
+  void AddPersonUniqueIDs(int mediaId, const CVideoPerson& person);
 
   int AddTvShow();
 
@@ -1190,6 +1191,7 @@ protected:
                     const Filter& filter = Filter(),
                     bool countOnly = false);
   void GetCast(int media_id, const std::string &media_type, std::vector<SActorInfo> &cast);
+  void GetCastPeople(int media_id, const std::string &media_type, std::vector<CVideoPerson> &people);
   void GetTags(int media_id, const std::string &media_type, std::vector<std::string> &tags);
   void GetRatings(int media_id, const std::string &media_type, RatingMap &ratings);
   void GetUniqueIDs(int media_id, const std::string &media_type, CVideoInfoTag& details);

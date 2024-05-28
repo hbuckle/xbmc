@@ -385,6 +385,7 @@ public:
   std::vector< SActorInfo > m_cast;
   std::vector< CVideoPerson > m_people;
   typedef std::vector< SActorInfo >::const_iterator iCast;
+  typedef std::vector< CVideoPerson >::const_iterator iPeople;
   struct SetInfo //!< Struct holding information about a movie set
   {
     std::string title; //!< Title of the movie set

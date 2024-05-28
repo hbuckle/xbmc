@@ -1343,7 +1343,7 @@ void CVideoInfoTag::ParseNative(const TiXmlElement* movie, bool prioritise)
     node = node->NextSiblingElement("actor");
   }
 
-  node = movie->FirstChildElement("people");
+  node = movie->FirstChildElement("person");
   if (node && node->FirstChild() && prioritise)
     m_people.clear();
   while (node)
@@ -1360,12 +1360,24 @@ void CVideoInfoTag::ParseNative(const TiXmlElement* movie, bool prioritise)
       if (XMLUtils::GetString(node, "type", value))
         info.SetType(StringUtils::Trim(value));
 
+      const TiXmlElement* uniqueid = node->FirstChildElement("uniqueid");
+      for (; uniqueid != nullptr; uniqueid = uniqueid->NextSiblingElement("uniqueid"))
+      {
+        if (uniqueid->FirstChild())
+        {
+          if (uniqueid->QueryStringAttribute("type", &value) == TIXML_SUCCESS)
+          {
+            info.SetUniqueID(uniqueid->FirstChild()->ValueStr(), value);
+          }
+        }
+      }
+
       const char* clear=node->Attribute("clear");
       if (clear && StringUtils::CompareNoCase(clear, "true"))
         m_people.clear();
       m_people.push_back(info);
     }
-    node = node->NextSiblingElement("people");
+    node = node->NextSiblingElement("person");
   }
 
   // Pre-Jarvis NFO file:

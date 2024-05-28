@@ -1984,6 +1984,7 @@ void CVideoDatabase::AddPeople(int mediaId, const char *mediaType, const std::ve
   for (const auto &i : people)
   {
     int idPerson = AddPerson(i);
+    AddPersonUniqueIDs(idPerson, i);
     AddLinkToPerson(mediaId, mediaType, idPerson, i.GetRole(), i.GetType());
   }
 }
@@ -2019,26 +2020,26 @@ int CVideoDatabase::AddPerson(const CVideoPerson& person)
   return idPerson;
 }
 
-// void CVideoDatabase::AddPersonUniqueIDs(int mediaId, const CVideoPerson& person)
-// {
-//   for (const auto& i : person.GetUniqueIDs())
-//   {
-//     std::string strSQL = PrepareSQL("SELECT uniqueid_id FROM uniqueid WHERE media_id=%i AND media_type='%s' AND type = '%s'", mediaId, MediaTypePerson, i.first.c_str());
-//     m_pDS->query(strSQL);
-//     if (m_pDS->num_rows() == 0)
-//     {
-//       m_pDS->close();
-//       strSQL = PrepareSQL("INSERT INTO uniqueid (media_id, media_type, value, type) VALUES (%i, '%s', '%s', '%s')", mediaId, MediaTypePerson, i.second.c_str(), i.first.c_str());
-//     }
-//     else
-//     {
-//       int id = m_pDS->fv(0).get_asInt();
-//       m_pDS->close();
-//       strSQL = PrepareSQL("UPDATE uniqueid SET value = '%s', type = '%s' WHERE uniqueid_id = %i", i.second.c_str(), i.first.c_str(), id);
-//     }
-//     m_pDS->exec(strSQL);
-//   }
-// }
+void CVideoDatabase::AddPersonUniqueIDs(int mediaId, const CVideoPerson& person)
+{
+  for (const auto& i : person.GetUniqueIDs())
+  {
+    std::string strSQL = PrepareSQL("SELECT uniqueid_id FROM uniqueid WHERE media_id=%i AND media_type='%s' AND type = '%s'", mediaId, MediaTypePerson, i.first.c_str());
+    m_pDS->query(strSQL);
+    if (m_pDS->num_rows() == 0)
+    {
+      m_pDS->close();
+      strSQL = PrepareSQL("INSERT INTO uniqueid (media_id, media_type, value, type) VALUES (%i, '%s', '%s', '%s')", mediaId, MediaTypePerson, i.second.c_str(), i.first.c_str());
+    }
+    else
+    {
+      int id = m_pDS->fv(0).get_asInt();
+      m_pDS->close();
+      strSQL = PrepareSQL("UPDATE uniqueid SET value = '%s', type = '%s' WHERE uniqueid_id = %i", i.second.c_str(), i.first.c_str(), id);
+    }
+    m_pDS->exec(strSQL);
+  }
+}
 
 void CVideoDatabase::AddLinkToPerson(int mediaId, const char *mediaType, int personId, const std::string &role, const std::string &type)
 {
@@ -2047,8 +2048,8 @@ void CVideoDatabase::AddLinkToPerson(int mediaId, const char *mediaType, int per
                                personId, mediaId, mediaType, role.c_str(), type.c_str());
 
   if (GetSingleValue(sql).empty())
-  { // doesn't exists, add it
-    sql = PrepareSQL("INSERT INTO people_link (person_id, media_id, media_type, role, type) VALUES(%i,%i,'%s','%s',%i)", personId, mediaId, mediaType, role.c_str(), type.c_str());
+  {
+    sql = PrepareSQL("INSERT INTO people_link (person_id, media_id, media_type, role, type) VALUES(%i,%i,'%s','%s','%s')", personId, mediaId, mediaType, role.c_str(), type.c_str());
     ExecuteQuery(sql);
   }
 }
@@ -4521,7 +4522,10 @@ CVideoInfoTag CVideoDatabase::GetDetailsForMovie(const dbiplus::sql_record* cons
   if (getDetails)
   {
     if (getDetails & VideoDbDetailsCast)
+    {
       GetCast(details.m_iDbId, MediaTypeMovie, details.m_cast);
+      GetCastPeople(details.m_iDbId, MediaTypeMovie, details.m_people);
+    }
 
     if (getDetails & VideoDbDetailsTag)
       GetTags(details.m_iDbId, MediaTypeMovie, details.m_tags);
@@ -4814,6 +4818,34 @@ void CVideoDatabase::GetCast(int media_id, const std::string &media_type, std::v
         cast.emplace_back(std::move(info));
       }
 
+      m_pDS2->next();
+    }
+    m_pDS2->close();
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR, "{}({},{}) failed", __FUNCTION__, media_id, media_type);
+  }
+}
+
+void CVideoDatabase::GetCastPeople(int media_id, const std::string &media_type, std::vector<CVideoPerson> &cast)
+{
+  try
+  {
+    if (!m_pDB)
+      return;
+    if (!m_pDS2)
+      return;
+
+    std::string sql = PrepareSQL("SELECT people.name, people_link.role, people_link.type FROM people_link JOIN people ON people_link.person_id=people.person_id WHERE people_link.media_id=%i AND people_link.media_type='%s'", media_id, media_type.c_str());
+    m_pDS2->query(sql);
+    while (!m_pDS2->eof())
+    {
+      CVideoPerson info;
+      info.SetName(m_pDS2->fv(0).get_asString());
+      info.SetRole(m_pDS2->fv(1).get_asString());
+      info.SetType(m_pDS2->fv(2).get_asString());
+      cast.emplace_back(std::move(info));
       m_pDS2->next();
     }
     m_pDS2->close();

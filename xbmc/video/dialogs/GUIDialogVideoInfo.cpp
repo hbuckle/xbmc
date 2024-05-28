@@ -417,31 +417,35 @@ void CGUIDialogVideoInfo::SetMovie(const CFileItem *item)
   }
   else
   { // movie/show/season/episode
-    for (CVideoInfoTag::iCast it = m_movieItem->GetVideoInfoTag()->m_cast.begin(); it != m_movieItem->GetVideoInfoTag()->m_cast.end(); ++it)
+    for (CVideoInfoTag::iPeople it = m_movieItem->GetVideoInfoTag()->m_people.begin(); it != m_movieItem->GetVideoInfoTag()->m_people.end(); ++it)
     {
-      CFileItemPtr item(new CFileItem(it->strName));
-      if (!it->thumb.empty())
-        item->SetArt("thumb", it->thumb);
-      else
+      if (it->GetType() == "actor")
       {
-        const std::shared_ptr<CSettings> settings =
-            CServiceBroker::GetSettingsComponent()->GetSettings();
-        if (settings->GetInt(CSettings::SETTING_VIDEOLIBRARY_ARTWORK_LEVEL) !=
-                CSettings::VIDEOLIBRARY_ARTWORK_LEVEL_NONE &&
-            settings->GetBool(CSettings::SETTING_VIDEOLIBRARY_ACTORTHUMBS))
-        { // backward compatibility
-          std::string thumb = CScraperUrl::GetThumbUrl(it->thumbUrl.GetFirstUrlByType());
-          if (!thumb.empty())
-          {
-            item->SetArt("thumb", thumb);
-            CServiceBroker::GetTextureCache()->BackgroundCacheImage(thumb);
-          }
-        }
+        CFileItemPtr item(new CFileItem(it->GetName()));
+        // if (!it->thumb.empty())
+        //   item->SetArt("thumb", it->thumb);
+        // else
+        // {
+        //   const std::shared_ptr<CSettings> settings =
+        //       CServiceBroker::GetSettingsComponent()->GetSettings();
+        //   if (settings->GetInt(CSettings::SETTING_VIDEOLIBRARY_ARTWORK_LEVEL) !=
+        //           CSettings::VIDEOLIBRARY_ARTWORK_LEVEL_NONE &&
+        //       settings->GetBool(CSettings::SETTING_VIDEOLIBRARY_ACTORTHUMBS))
+        //   { // backward compatibility
+        //     std::string thumb = CScraperUrl::GetThumbUrl(it->thumbUrl.GetFirstUrlByType());
+        //     if (!thumb.empty())
+        //     {
+        //       item->SetArt("thumb", thumb);
+        //       CServiceBroker::GetTextureCache()->BackgroundCacheImage(thumb);
+        //     }
+        //   }
+        // }
+        item->SetArt("thumb", "DefaultActor.png");
+        item->SetArt("icon", "DefaultActor.png");
+        item->SetLabel(it->GetName());
+        item->SetLabel2(it->GetRole());
+        m_castList->Add(item);
       }
-      item->SetArt("icon", "DefaultActor.png");
-      item->SetLabel(it->strName);
-      item->SetLabel2(it->strRole);
-      m_castList->Add(item);
     }
   }
 
@@ -478,7 +482,7 @@ void CGUIDialogVideoInfo::SetMovie(const CFileItem *item)
 void CGUIDialogVideoInfo::Update()
 {
   // setup plot text area
-  std::shared_ptr<CSettingList> setting(std::dynamic_pointer_cast<CSettingList>( 
+  std::shared_ptr<CSettingList> setting(std::dynamic_pointer_cast<CSettingList>(
     CServiceBroker::GetSettingsComponent()->GetSettings()->GetSetting(CSettings::SETTING_VIDEOLIBRARY_SHOWUNWATCHEDPLOTS)));
   std::string strTmp = m_movieItem->GetVideoInfoTag()->m_strPlot;
   if (m_movieItem->GetVideoInfoTag()->m_type != MediaTypeTvShow)
