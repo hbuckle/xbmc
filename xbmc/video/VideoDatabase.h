@@ -1153,7 +1153,6 @@ protected:
   int AddUniqueIDs(int mediaId, const char *mediaType, const CVideoInfoTag& details);
   int AddActor(const std::string& strActor, const std::string& thumbURL, const std::string &thumb = "");
   int AddPerson(const CVideoPerson& person);
-  void AddPersonUniqueIDs(int mediaId, const CVideoPerson& person);
 
   int AddTvShow();
 

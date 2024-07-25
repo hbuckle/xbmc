@@ -444,7 +444,7 @@ void CGUIDialogVideoInfo::SetMovie(const CFileItem *item)
         item->SetArt("thumb", "DefaultActor.png");
         item->SetArt("icon", "DefaultActor.png");
         item->SetLabel(it->GetName());
-        item->SetLabel2(it->GetRole());
+        item->SetLabel2(it->GetRole() + it->GetUniqueID("tmdb"));
         m_castList->Add(item);
       }
     }
