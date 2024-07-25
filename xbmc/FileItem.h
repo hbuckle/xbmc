@@ -172,8 +172,6 @@ public:
   bool IsDeleted() const;
 
   bool IsGame() const;
-  bool IsPlayList() const;
-  bool IsSmartPlayList() const;
   bool IsLibraryFolder() const;
   bool IsPythonScript() const;
   bool IsPlugin() const;
@@ -391,13 +389,6 @@ public:
   CPictureInfoTag* GetPictureInfoTag();
 
   /*!
-   \brief Get the local fanart for this item if it exists
-   \return path to the local fanart for this item, or empty if none exists
-   \sa GetFolderThumb, GetTBNFile
-   */
-  std::string GetLocalFanart() const;
-
-  /*!
    \brief Assemble the base filename of local artwork for an item,
    accounting for archives, stacks and multi-paths, and BDMV/VIDEO_TS folders.
    `useFolder` is set to false
@@ -445,8 +436,6 @@ public:
    */
   std::string GetThumbHideIfUnwatched(const CFileItem* item) const;
 
-  // Gets the .tbn file associated with this item
-  std::string GetTBNFile() const;
   // Gets the folder image associated with this item (defaults to folder.jpg)
   std::string GetFolderThumb(const std::string &folderJPG = "folder.jpg") const;
   // Gets the correct movie title

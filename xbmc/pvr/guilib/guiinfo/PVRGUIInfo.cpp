@@ -27,12 +27,14 @@
 #include "pvr/channels/PVRChannel.h"
 #include "pvr/channels/PVRChannelGroup.h"
 #include "pvr/channels/PVRChannelGroupMember.h"
+#include "pvr/channels/PVRChannelGroups.h"
 #include "pvr/channels/PVRChannelGroupsContainer.h"
 #include "pvr/channels/PVRRadioRDSInfoTag.h"
 #include "pvr/epg/EpgContainer.h"
 #include "pvr/epg/EpgInfoTag.h"
 #include "pvr/epg/EpgSearchFilter.h"
 #include "pvr/guilib/PVRGUIActionsChannels.h"
+#include "pvr/guilib/PVRGUIActionsEPG.h"
 #include "pvr/providers/PVRProvider.h"
 #include "pvr/providers/PVRProviders.h"
 #include "pvr/recordings/PVRRecording.h"
@@ -360,23 +362,6 @@ std::string GetAsLocalizedDateTimeString(const CDateTime& datetime)
   return datetime.IsValid() ? datetime.GetAsLocalizedDateTime(false, false) : "";
 }
 
-std::string GetEpgTagTitle(const std::shared_ptr<const CPVREpgInfoTag>& epgTag)
-{
-  if (epgTag)
-  {
-    if (CServiceBroker::GetPVRManager().IsParentalLocked(epgTag))
-      return g_localizeStrings.Get(19266); // Parental locked
-    else if (!epgTag->Title().empty())
-      return epgTag->Title();
-  }
-
-  if (!CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
-          CSettings::SETTING_EPG_HIDENOINFOAVAILABLE))
-    return g_localizeStrings.Get(19055); // no information available
-
-  return {};
-}
-
 } // unnamed namespace
 
 bool CPVRGUIInfo::GetListItemAndPlayerLabel(const CFileItem* item,
@@ -608,6 +593,36 @@ bool CPVRGUIInfo::GetListItemAndPlayerLabel(const CFileItem* item,
     return false;
   }
 
+  if (item->IsPVRChannelGroup())
+  {
+    switch (info.m_info)
+    {
+      case LISTITEM_PVR_GROUP_ORIGIN:
+      {
+        const std::shared_ptr<CPVRChannelGroup> group{
+            CServiceBroker::GetPVRManager().ChannelGroups()->GetGroupByPath(item->GetPath())};
+        if (group)
+        {
+          const CPVRChannelGroup::Origin origin{group->GetOrigin()};
+          switch (origin)
+          {
+            case CPVRChannelGroup::Origin::CLIENT:
+              strValue = g_localizeStrings.Get(856); // Client
+              return true;
+            case CPVRChannelGroup::Origin::SYSTEM:
+              strValue = g_localizeStrings.Get(857); // System
+              return true;
+            case CPVRChannelGroup::Origin::USER:
+              strValue = g_localizeStrings.Get(858); // User
+              return true;
+          }
+        }
+        break;
+      }
+    }
+    return false;
+  }
+
   std::shared_ptr<const CPVREpgInfoTag> epgTag;
   std::shared_ptr<const CPVRChannel> channel;
   if (item->IsPVRChannel() || item->IsEPG() || item->IsPVRTimer())
@@ -652,7 +667,7 @@ bool CPVRGUIInfo::GetListItemAndPlayerLabel(const CFileItem* item,
       case LISTITEM_EPG_EVENT_TITLE:
         // Note: in difference to LISTITEM_TITLE, LISTITEM_EPG_EVENT_TITLE returns the title
         // associated with the epg event of a timer, if any, and not the title of the timer.
-        strValue = GetEpgTagTitle(epgTag);
+        strValue = CServiceBroker::GetPVRManager().Get<PVR::GUI::EPG>().GetTitleForEpgTag(epgTag);
         return true;
     }
   }
@@ -870,6 +885,13 @@ bool CPVRGUIInfo::GetListItemAndPlayerLabel(const CFileItem* item,
         strValue =
             CServiceBroker::GetPVRManager().GetClient(channel->ClientID())->GetInstanceName();
         return true;
+      case LISTITEM_DATE_ADDED:
+        if (channel->DateTimeAdded().IsValid())
+        {
+          strValue = channel->DateTimeAdded().GetAsLocalizedDate();
+          return true;
+        }
+        break;
     }
   }
 
@@ -1265,8 +1287,11 @@ bool CPVRGUIInfo::GetFallbackLabel(std::string& value,
       /////////////////////////////////////////////////////////////////////////////////////////////
       case VIDEOPLAYER_TITLE:
       case MUSICPLAYER_TITLE:
-        value = GetEpgTagTitle(CPVRItem(item).GetEpgInfoTag());
+      {
+        const std::shared_ptr<const CPVREpgInfoTag> tag{CPVRItem(item).GetEpgInfoTag()};
+        value = CServiceBroker::GetPVRManager().Get<PVR::GUI::EPG>().GetTitleForEpgTag(tag);
         return !value.empty();
+      }
       default:
         break;
     }

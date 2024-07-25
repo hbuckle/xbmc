@@ -12,12 +12,13 @@
 #include "FileItemList.h"
 #include "MediaSource.h"
 #include "ServiceBroker.h"
-#include "TextureDatabase.h"
 #include "filesystem/Directory.h"
 #include "guilib/LocalizeStrings.h"
+#include "imagefiles/ImageFileURL.h"
 #include "music/MusicDatabase.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
+#include "utils/ArtUtils.h"
 #include "utils/FileExtensionProvider.h"
 #include "utils/FileUtils.h"
 #include "utils/URIUtils.h"
@@ -471,14 +472,14 @@ std::vector<std::string> CVideoItemArtworkFanartHandler::GetRemoteArt() const
     if (URIUtils::IsProtocol(thumb, "image"))
       continue;
 
-    remoteArt.emplace_back(CTextureUtils::GetWrappedThumbURL(thumb));
+    remoteArt.emplace_back(IMAGE_FILES::URLFromFile(thumb));
   }
   return remoteArt;
 }
 
 std::string CVideoItemArtworkFanartHandler::GetLocalArt() const
 {
-  return m_item->GetLocalFanart();
+  return ART::GetLocalFanart(*m_item);
 }
 
 std::string CVideoItemArtworkFanartHandler::UpdateEmbeddedArt(const std::string& art)
